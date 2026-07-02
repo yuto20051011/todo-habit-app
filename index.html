@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ToDo・習慣管理アプリ</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:sans-serif;
+}
+
+body{
+    background:#eef2f7;
+    padding:20px;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.2);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+h2{
+    margin-top:25px;
+    margin-bottom:10px;
+}
+
+.input-area{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.input-area input,
+.input-area select{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    font-size:16px;
+}
+
+#task{
+    flex:1 1 100%;
+}
+
+button{
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.add{
+    background:#4CAF50;
+    color:white;
+}
+
+.complete{
+    background:#2196F3;
+    color:white;
+}
+
+.delete{
+    background:#f44336;
+    color:white;
+}
+
+ul{
+    margin-top:10px;
+}
+
+li{
+    list-style:none;
+    margin-bottom:10px;
+    padding:15px;
+    border-radius:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#f7f7f7;
+}
+
+.task-info{
+    flex:1;
+}
+
+.done{
+    text-decoration:line-through;
+    color:gray;
+}
+
+.high{
+    border-left:6px solid red;
+}
+
+.middle{
+    border-left:6px solid orange;
+}
+
+.low{
+    border-left:6px solid green;
+}
+
+.buttons{
+    display:flex;
+    gap:5px;
+}
+
+.status{
+    margin-top:20px;
+    text-align:center;
+    font-weight:bold;
+    line-height:2;
+}
+
+@media(max-width:600px){
+
+li{
+    flex-direction:column;
+    align-items:flex-start;
+}
+
+.buttons{
+    margin-top:10px;
+}
+
+}
+
+.chart-area{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:25px;
+    margin-top:15px;
+}
+
+.chart-area canvas{
+    max-width:220px;
+    width:100%;
+    height:auto;
+}
+
+.calendar-controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:15px 0 10px;
+    gap:10px;
+}
+
+.calendar-controls button{
+    background:#2196F3;
+    color:white;
+}
+
+.calendar-week,
+.calendar{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+}
+
+.calendar-week div{
+    text-align:center;
+    font-weight:bold;
+    padding:8px 0;
+}
+
+.calendar-week div:first-child{
+    color:red;
+}
+
+.calendar-week div:last-child{
+    color:blue;
+}
+
+.calendar-day{
+    min-height:95px;
+    border:1px solid #ddd;
+    padding:6px;
+    background:#fff;
+}
+
+.calendar-day.empty{
+    background:#f3f3f3;
+}
+
+.calendar-day.today{
+    background:#fff9d9;
+}
+
+.day-number{
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+.deadline-task{
+    font-size:12px;
+    padding:3px;
+    margin-top:3px;
+    border-radius:4px;
+    background:#ffe0e0;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+
+.deadline-task.done{
+    background:#e0e0e0;
+    text-decoration:line-through;
+}
+
+@media(max-width:600px){
+
+    .calendar-day{
+        min-height:70px;
+        font-size:13px;
+    }
+
+    .deadline-task{
+        font-size:10px;
+    }
+
+    .calendar-controls{
+        font-size:13px;
+    }
+
+    .calendar-controls button{
+        padding:8px;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>📝 ToDo・習慣管理</h1>
+
+<div class="input-area">
+
+<input
+id="task"
+type="text"
+placeholder="やることを入力">
+
+<select id="type">
+<option value="todo">📋 ToDo</option>
+<option value="habit">🔁 習慣</option>
+</select>
+
+<select id="category">
+<option>仕事</option>
+<option>勉強</option>
+<option>買い物</option>
+<option>健康</option>
+<option>その他</option>
+</select>
+
+<select id="priority">
+<option value="高">🔴 高</option>
+<option value="中" selected>🟡 中</option>
+<option value="低">🟢 低</option>
+</select>
+
+<label for="deadline">締切日：</label>
+<input id="deadline" type="date">
+
+<button
+class="add"
+onclick="addTask()">
+追加
+</button>
+
+</div>
+
+<h2>📋 ToDo</h2>
+<ul id="todoList"></ul>
+
+<h2>🔁 習慣</h2>
+<ul id="habitList"></ul>
+
+<div
+class="status"
+id="status">
+</div>
+<h2>📊 達成率</h2>
+
+<div class="chart-area">
+    <canvas id="todoChart" width="220" height="220"></canvas>
+    <canvas id="habitChart" width="220" height="220"></canvas>
+</div>
+
+<h2>📅 締切カレンダー</h2>
+
+<div class="calendar-controls">
+    <button onclick="changeMonth(-1)">← 前の月</button>
+    <strong id="calendarTitle"></strong>
+    <button onclick="changeMonth(1)">次の月 →</button>
+</div>
+
+<div class="calendar-week">
+    <div>日</div>
+    <div>月</div>
+    <div>火</div>
+    <div>水</div>
+    <div>木</div>
+    <div>金</div>
+    <div>土</div>
+</div>
+
+<div id="calendar" class="calendar"></div>
+
+</div>
+
+<script>
+let todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+let currentCalendarDate = new Date();
+
+// 保存
+function save(){
+    localStorage.setItem("todos", JSON.stringify(todos));
+}
+
+// 習慣を毎日リセット
+function resetHabits(){
+
+    const today = new Date().toLocaleDateString();
+
+    const lastDay = localStorage.getItem("lastDay");
+
+    if(lastDay !== today){
+
+        todos.forEach(todo=>{
+
+            if(todo.type === "habit"){
+
+                todo.done = false;
+
+            }
+
+        });
+
+        localStorage.setItem("lastDay", today);
+
+        save();
+
+    }
+
+}
+
+// 一覧表示
+function render(){
+
+    const todoList = document.getElementById("todoList");
+    const habitList = document.getElementById("habitList");
+
+    todoList.innerHTML = "";
+    habitList.innerHTML = "";
+
+    let todoDone = 0;
+    let habitDone = 0;
+    let todoAll = 0;
+    let habitAll = 0;
+
+    todos.forEach((todo,index)=>{
+
+        if(todo.type === "todo"){
+
+            todoAll++;
+
+            if(todo.done){
+                todoDone++;
+            }
+
+        }else{
+
+            habitAll++;
+
+            if(todo.done){
+                habitDone++;
+            }
+
+        }
+
+        const li = document.createElement("li");
+
+        if(todo.priority === "高"){
+
+            li.classList.add("high");
+
+        }else if(todo.priority === "中"){
+
+            li.classList.add("middle");
+
+        }else{
+
+            li.classList.add("low");
+
+        }
+
+        const info = document.createElement("div");
+        info.className = "task-info";
+
+ let deadlineText = "";
+
+if(todo.deadline){
+
+    const today = new Date().toISOString().split("T")[0];
+
+    if(todo.deadline < today && !todo.done){
+
+        deadlineText =
+        "<br><span style='color:red;'>⚠️ 期限切れ：" +
+        todo.deadline +
+        "</span>";
+
+    }else if(todo.deadline === today && !todo.done){
+
+        deadlineText =
+        "<br><span style='color:orange;'>📅 今日が締切：" +
+        todo.deadline +
+        "</span>";
+
+    }else{
+
+        deadlineText =
+        "<br>📅 締切：" + todo.deadline;
+
+    }
+
+}
+
+info.innerHTML =
+"<strong>" + todo.text + "</strong><br>" +
+"📂 " + todo.category +
+"　|　⭐ " + todo.priority +
+deadlineText;
+        if(todo.done){
+
+            info.classList.add("done");
+
+        }
+
+        const buttons = document.createElement("div");
+        buttons.className = "buttons";
+
+        const done = document.createElement("button");
+        done.className = "complete";
+        done.textContent = "完了";
+
+        done.onclick = function(){
+
+            todos[index].done = !todos[index].done;
+
+            save();
+
+            render();
+
+        };
+
+        const del = document.createElement("button");
+        del.className = "delete";
+        del.textContent = "削除";
+
+        del.onclick = function(){
+
+            todos.splice(index,1);
+
+            save();
+
+            render();
+
+        };
+
+        buttons.appendChild(done);
+        buttons.appendChild(del);
+
+        li.appendChild(info);
+        li.appendChild(buttons);
+
+        if(todo.type === "todo"){
+
+            todoList.appendChild(li);
+
+        }else{
+
+            habitList.appendChild(li);
+
+        }
+
+    });
+
+    document.getElementById("status").innerHTML =
+    "📋 ToDo　" + todoDone + " / " + todoAll +
+    "<br>" +
+    "🔁 習慣　" + habitDone + " / " + habitAll;
+
+    drawChart("todoChart", "ToDo", todoDone, todoAll);
+    drawChart("habitChart", "習慣", habitDone, habitAll);
+
+    renderCalendar();
+
+}
+
+function drawChart(canvasId, title, done, all){
+
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 75;
+
+    const percent = all === 0 ? 0 : Math.round(done / all * 100);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 未達成部分
+    ctx.beginPath();
+    ctx.arc(
+        centerX,
+        centerY,
+        radius,
+        0,
+        Math.PI * 2
+    );
+    ctx.strokeStyle = "#e0e0e0";
+    ctx.lineWidth = 18;
+    ctx.stroke();
+
+    // 達成部分
+    ctx.beginPath();
+    ctx.arc(
+        centerX,
+        centerY,
+        radius,
+        -Math.PI / 2,
+        -Math.PI / 2 + Math.PI * 2 * percent / 100
+    );
+    ctx.strokeStyle = "#4CAF50";
+    ctx.lineWidth = 18;
+    ctx.lineCap = "round";
+    ctx.stroke();
+
+    // 中央の文字
+    ctx.fillStyle = "#333";
+    ctx.textAlign = "center";
+
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillText(percent + "%", centerX, centerY + 5);
+
+    ctx.font = "16px sans-serif";
+    ctx.fillText(title, centerX, centerY + 35);
+
+}
+
+function changeMonth(amount){
+
+    currentCalendarDate.setMonth(
+        currentCalendarDate.getMonth() + amount
+    );
+
+    renderCalendar();
+
+}
+
+function renderCalendar(){
+
+    const calendar = document.getElementById("calendar");
+    const title = document.getElementById("calendarTitle");
+
+    calendar.innerHTML = "";
+
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+
+    title.textContent =
+    year + "年" + (month + 1) + "月";
+
+    const firstDay = new Date(year, month, 1).getDay();
+
+    const lastDate = new Date(
+        year,
+        month + 1,
+        0
+    ).getDate();
+
+    const today = new Date().toISOString().split("T")[0];
+
+    for(let i = 0; i < firstDay; i++){
+
+        const empty = document.createElement("div");
+        empty.className = "calendar-day empty";
+
+        calendar.appendChild(empty);
+
+    }
+
+    for(let day = 1; day <= lastDate; day++){
+
+        const cell = document.createElement("div");
+        cell.className = "calendar-day";
+
+        const dateText =
+        year + "-" +
+        String(month + 1).padStart(2,"0") + "-" +
+        String(day).padStart(2,"0");
+
+        if(dateText === today){
+
+            cell.classList.add("today");
+
+        }
+
+        const dayNumber = document.createElement("div");
+        dayNumber.className = "day-number";
+        dayNumber.textContent = day;
+
+        cell.appendChild(dayNumber);
+
+        todos.forEach(todo=>{
+
+            if(todo.deadline === dateText){
+
+                const task = document.createElement("div");
+                task.className = "deadline-task";
+
+                if(todo.done){
+
+                    task.classList.add("done");
+
+                }
+
+                task.textContent = todo.text;
+
+                cell.appendChild(task);
+
+            }
+
+        });
+
+        calendar.appendChild(cell);
+
+    }
+
+}
+
+// タスク追加
+function addTask(){
+
+    const task = document.getElementById("task").value.trim();
+
+    if(task === ""){
+
+        alert("やることを入力してください");
+
+        return;
+
+    }
+
+    todos.push({
+
+    text: task,
+
+    category: document.getElementById("category").value,
+
+    priority: document.getElementById("priority").value,
+
+    type: document.getElementById("type").value,
+
+    deadline: document.getElementById("deadline").value,
+
+    done: false
+
+});
+
+    document.getElementById("task").value = "";
+    document.getElementById("deadline").value = "";
+
+    save();
+
+    render();
+
+}
+
+// Enterキーで追加
+document.getElementById("task").addEventListener("keypress",function(e){
+
+    if(e.key === "Enter"){
+
+        addTask();
+
+    }
+
+});
+
+// 起動時
+resetHabits();
+
+render();
+
+</script>
+
+</body>
+</html>
